@@ -1,6 +1,7 @@
 import os
 import sys
 import traceback
+import weakref
 
 from numpy import array, float32, float64, int32, uint8
 
@@ -24,7 +25,6 @@ DEBUG = ERROR
 class WSHandler(websocket.WebSocketHandler):
 
     subhandlers = {} # map of obj pathname or file pathname to subhandler instances
-    extensions = {}  # map of file extensions to lists of supporting subhandlers
     protocols = {}   # map of protocols to lists of supporting subhandlers
 
     def initialize(self, view_dir):
@@ -120,7 +120,7 @@ class WV_ViewHandler(object):
     def __init__(self, handler, fname=None, inner_class=None):
         self.wv = WV_Wrapper()
         self.buf = self.wv.get_bufflen()*'\0'
-        self.handler = handler  # need this to send the msgs
+        self.handler = weakref.ref(handler)  # need this to send the msgs
         self.geometry_file = fname
         self.inner_class = inner_class
 
@@ -131,7 +131,7 @@ class WV_ViewHandler(object):
 
     def send_binary_data(self, wsi, buf, ibuf):
         try:
-            self.handler.write_message(buf, binary=True)
+            self.handler().write_message(buf, binary=True)
         except Exception as err:
             ERROR("Exception in send_binary_data:", err)
             return -1
@@ -150,7 +150,6 @@ class WV_ViewHandler(object):
 
     def on_message(self, message):
         DEBUG("websocket got message: %s" % message)
-
 
     def on_close(self):
         DEBUG("WebSocket closed. addr=%s" % id(self))
@@ -196,8 +195,12 @@ def load_subhandlers():
         except Exception as err:
             ERROR("Entry point %s failed to load: %s" % (str(ep).split()[0], err))
         else:
-            exts = klass.get_file_extensions()
-            for ext in exts:
-                WSHandler.subhandler_classes.setdefault(ext, []).append(klass)
+            # exts = klass.get_file_extensions()
+            # for ext in exts:
+            #     WSHandler.extensions.setdefault(ext, []).append(klass)
+            protos = klass.get_protocols():
+            for proto in protos:
+                WSHandler.protocols.setdefault(proto, []).append(klass)
+
 
 
