@@ -332,13 +332,6 @@ cdef class WV_Wrapper:
         wv_finishSends(self.context)
 
 
-    def createBox(self, char *name, int flag, offset):
-        cdef float coffset[3]
-        for i in range(3):
-            coffset[i] = offset[i]
-        wv_createBox(self.context, name, flag, coffset)
-
-
     def set_face_data(self,  np.ndarray[np.float32_t, mode="c"] points not None,
                              np.ndarray[int, mode="c"] tris not None,
                              np.ndarray[np.float32_t, mode="c"] colors=None,
@@ -561,4 +554,16 @@ cdef class WV_Wrapper:
             self.context.gPrims[igprim].lWidth = 1.5
         if head != 0:
             wv_addArrowHeads(self.context, igprim, 0.05, 1, &head)
+
+
+
+    # this is just here for demo purposes so we can display a simple cube
+    # if no 'real' view handlers have been installed, e.g. for pygem_diamond or
+    # GeoMACH
+    def createBox(self, char *name, int flag, offset):
+        cdef float coffset[3]
+        for i in range(3):
+            coffset[i] = offset[i]
+        wv_createBox(self.context, name, flag, coffset)
+
 
