@@ -28,16 +28,21 @@ class WSHandler(websocket.WebSocketHandler):
     protocols = {}   # map of protocols to lists of supporting subhandlers
 
     def initialize(self, view_dir):
-        self.view_dir = os.path.abspath(os.path.expanduser(view_dir)
+        DEBUG("in initialize, view_dir=",str(view_dir))
+        self.view_dir = os.path.abspath(os.path.expanduser(view_dir))
 
     def _handle_request_exception(self, exc):
         ERROR("Unhandled exception: %s" % str(exc))
         super(WSHandler, self)._handle_request_exception(exc)
 
     def _execute(self, transforms, *args, **kwargs):
-        self.transforms = transforms
-        self.args = args[:]
-        self.kwargs = kwargs.copy()
+        self._transforms = transforms
+        self._args = args[:]
+        self._kwargs = kwargs.copy()
+        import pprint
+        print 'args:',args
+        print 'kwargs:'
+        pprint.pprint(kwargs)
         # try:
         #     self.view_handler = self.geometry_file = self.inner_class = None
         #     if len(args) > 0 and args[0]:
@@ -59,6 +64,7 @@ class WSHandler(websocket.WebSocketHandler):
 
     # this is called before open
     def select_subprotocol(self, subprotocols):
+        DEBUG("in select_subprotocol")
         try:
             #protocols = ['pyv3d-bin-1.0', 'pyv3d-txt-1.0']
             for p in subprotocols:
@@ -73,6 +79,7 @@ class WSHandler(websocket.WebSocketHandler):
         return None
 
     def open(self):
+        DEBUG("in open")
         try:
             if self._proto == 'pyv3d-bin-1.0':  # binary protocol
                 klass = None
@@ -103,6 +110,7 @@ class WSHandler(websocket.WebSocketHandler):
             else:  # text protocol
                 pass
         except Exception as err:
+            ERROR("OH CRAP!")
             ERROR('Exception: %s' % traceback.format_exc())
 
     def on_message(self, message):
@@ -195,10 +203,11 @@ def load_subhandlers():
         except Exception as err:
             ERROR("Entry point %s failed to load: %s" % (str(ep).split()[0], err))
         else:
+            DEBUG("loaded entry point %s" % str(ep).split()[0])
             # exts = klass.get_file_extensions()
             # for ext in exts:
             #     WSHandler.extensions.setdefault(ext, []).append(klass)
-            protos = klass.get_protocols():
+            protos = klass.get_protocols()
             for proto in protos:
                 WSHandler.protocols.setdefault(proto, []).append(klass)
 
